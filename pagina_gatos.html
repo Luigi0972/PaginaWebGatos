@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo sobre Gatos — Página interactiva</title>
+  <meta name="description" content="Página demo sobre gatos con galería, datos curiosos, mini-quiz y efectos visuales. Todo en un archivo.">
+  <style>
+    :root{
+      --bg: #fff8f2;
+      --card: #ffffff;
+      --accent: #ff7b7b;
+      --muted: #6b7280;
+      --glass: rgba(255,255,255,0.6);
+      --shadow: 0 8px 24px rgba(15,23,42,0.08);
+      --maxw: 1100px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: radial-gradient(1200px 600px at 10% 10%, #fff1f0 0%, transparent 10%), var(--bg);
+      color:#0f172a; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      padding:32px; display:flex; justify-content:center;
+    }
+    .container{width:100%; max-width:var(--maxw);} 
+    header{
+      display:flex; gap:16px; align-items:center; justify-content:space-between; margin-bottom:20px;
+    }
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{width:64px; height:64px; border-radius:12px; background:linear-gradient(135deg,#ffd6d6,#ffdede); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:28px; box-shadow:var(--shadow)}
+    h1{margin:0; font-size:20px}
+    p.lead{margin:0;color:var(--muted); font-size:14px}
+
+    .controls{display:flex; gap:8px; align-items:center}
+    .btn{background:var(--accent); color:white; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; box-shadow:var(--shadow)}
+    .btn.secondary{background:transparent; color:var(--accent); border:2px solid rgba(255,123,123,0.18)}
+
+    main{display:grid; grid-template-columns: 1.05fr 0.6fr; gap:20px; align-items:start}
+    @media (max-width:900px){ main{grid-template-columns:1fr; } header{flex-direction:column; align-items:flex-start} }
+
+    /* Card */
+    .card{background:var(--card); border-radius:14px; padding:16px; box-shadow:var(--shadow)}
+
+    /* Gallery */
+    .gallery{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+    @media (max-width:700px){ .gallery{grid-template-columns:repeat(2,1fr)} }
+    .thumb{position:relative; overflow:hidden; border-radius:10px; cursor:pointer}
+    .thumb img{width:100%; height:200px; object-fit:cover; display:block; transition:transform .35s ease}
+    .thumb:hover img{transform:scale(1.06)}
+    .caption{position:absolute; left:10px; bottom:10px; background:rgba(0,0,0,0.45); color:white; padding:6px 8px; font-size:13px; border-radius:8px}
+
+    /* Modal */
+    .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(7,12,19,0.5); z-index:60}
+    .modal.show{display:flex}
+    .modal .inner{max-width:920px; width:94%; border-radius:12px; overflow:hidden; background:linear-gradient(180deg,#fff,#fff8f5); display:flex; gap:12px}
+    .modal img{width:60%; height:480px; object-fit:cover}
+    .modal .meta{padding:16px; flex:1}
+    .close{position:absolute; right:18px; top:18px; background:var(--card); border-radius:8px; padding:6px}
+
+    /* Sidebar */
+    .side-section{display:flex; flex-direction:column; gap:12px}
+    .fact{font-size:14px}
+
+    /* Quiz */
+    .quiz .q{margin-bottom:12px}
+    .options{display:flex; flex-direction:column; gap:8px}
+    .option{padding:10px; border-radius:8px; border:1px solid #eee; cursor:pointer}
+    .option.correct{border-color: #22c55e; background:rgba(34,197,94,0.06)}
+    .option.wrong{border-color: #ef4444; background:rgba(239,68,68,0.06)}
+
+    footer{margin-top:22px; color:var(--muted); font-size:13px}
+
+    /* little decorative */
+    .badge{background:linear-gradient(90deg,#ffdede,#ffd6d6); padding:6px 10px; border-radius:999px; font-weight:700}
+
+    /* Dark mode */
+    .dark{--bg:#0b1020; --card:#081025; --accent:#7dd3fc; --muted:#94a3b8; color:#e6eef8}
+    .dark body{background:linear-gradient(120deg,#071028,#061026)}
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <header>
+      <div class="brand">
+        <div class="logo">😺</div>
+        <div>
+          <h1>Todo sobre Gatos</h1>
+          <p class="lead">Una página demo — galería, datos curiosos y un mini-quiz interactivo.</p>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="randomFactBtn">Dato aleatorio</button>
+        <button class="btn secondary" id="toggleTheme">Modo oscuro</button>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <div class="card">
+          <h2 style="margin-top:0">Galería de gatos</h2>
+          <p style="color:var(--muted); margin-top:6px;">Haz clic en cualquier foto para ampliarla y leer una pequeña descripción.</p>
+
+          <div class="gallery" id="gallery">
+            <!-- Thumbnails injected by JS -->
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3 style="margin:0 0 8px 0">¿Quieres adoptar?</h3>
+          <p style="color:var(--muted); margin-bottom:12px">Los gatos pueden ser compañeros maravillosos. Recuerda: adopta responsablemente, vacuna y esteriliza.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="showTips">Consejos rápidos</button>
+            <button class="btn secondary" id="openQuiz">Probar mini-quiz</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3 style="margin:0 0 8px 0">Acerca de esta demo</h3>
+          <p style="color:var(--muted); margin:0; font-size:14px">Código en un solo archivo. No requiere dependencias externas. Puedes descargar la página y abrirla localmente.</p>
+        </div>
+      </section>
+
+      <aside class="side-section">
+        <div class="card">
+          <h3 style="margin:0 0 8px 0">Dato curioso</h3>
+          <p id="factText" class="fact">Los gatos tienen un hueso extra en la pata — les ayuda a estirarse con precisión.</p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin:0 0 8px 0">Mini-quiz</h3>
+          <div id="quiz" class="quiz">
+            <p style="color:var(--muted); margin-top:0">3 preguntas rápidas para poner a prueba lo que sabes.</p>
+            <div id="quizContent"></div>
+            <div style="margin-top:10px"><button class="btn" id="startQuizBtn">Iniciar Quiz</button></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin:0 0 8px 0">Pequeño selector</h3>
+          <p style="color:var(--muted); margin-top:0">Filtra la galería por tema:</p>
+          <select id="filter" style="width:100%; padding:10px; border-radius:8px; border:1px solid #eee">
+            <option value="all">Todas</option>
+            <option value="siames">Siamés</option>
+            <option value="tabby">Tabby</option>
+            <option value="persa">Persa</option>
+          </select>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <p>Creado como demo — puedes usar y modificar este archivo. ❤️</p>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="modal" aria-hidden="true">
+      <div class="inner card" role="dialog" aria-modal="true">
+        <img id="modalImg" src="" alt="Gato ampliado">
+        <div class="meta">
+          <h3 id="modalTitle">Título</h3>
+          <p id="modalDesc" style="color:var(--muted)"></p>
+        </div>
+        <button class="close" id="closeModal">✕</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- Data ---
+    const cats = [
+      {id:1, src:'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=800&q=60', title:'Siames curioso', desc:'Los siameses son conocidos por su sociabilidad y vocalización.', tag:'siames'},
+      {id:2, src:'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800&q=60', title:'Tabby soñoliento', desc:'El patrón tabby aparece por una marca genética común.', tag:'tabby'},
+      {id:3, src:'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?auto=format&fit=crop&w=800&q=60', title:'Persa elegante', desc:'Los persas tienen pelaje largo y carácter tranquilo.', tag:'persa'},
+      {id:4, src:'https://images.unsplash.com/photo-1513451713350-dee890297c4a?auto=format&fit=crop&w=800&q=60', title:'Gato en la ventana', desc:'A los gatos les encanta observar desde lugares altos.', tag:'tabby'},
+      {id:5, src:'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=800&q=60', title:'Siames pensativo', desc:'Sociables y juguetones, disfrutan la interacción humana.', tag:'siames'},
+      {id:6, src:'https://images.unsplash.com/photo-1601758123927-4c6f6f8a1f6f?auto=format&fit=crop&w=800&q=60', title:'Persa durmiendo', desc:'Su pelaje requiere cepillado regular para evitar nudos.', tag:'persa'}
+    ];
+
+    const facts = [
+      'Los gatos pueden girar sus orejas hasta 180°.',
+      'El ronroneo de un gato puede tener efectos calmantes en humanos.',
+      'Los gatos domésticos comparten más del 95% de su ADN con el tigre.',
+      'Las almohadillas en sus patas les ayudan a caminar silenciosamente.',
+      'Un gato adulto tiene 30 dientes.'
+    ];
+
+    // --- DOM refs ---
+    const gallery = document.getElementById('gallery');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const closeModal = document.getElementById('closeModal');
+    const factText = document.getElementById('factText');
+    const randomFactBtn = document.getElementById('randomFactBtn');
+    const toggleTheme = document.getElementById('toggleTheme');
+    const filter = document.getElementById('filter');
+    const startQuizBtn = document.getElementById('startQuizBtn');
+    const quizContent = document.getElementById('quizContent');
+
+    // --- Render gallery ---
+    function renderGallery(tag='all'){
+      gallery.innerHTML = '';
+      const items = tag === 'all' ? cats : cats.filter(c => c.tag === tag);
+      items.forEach(c =>{
+        const div = document.createElement('div'); div.className = 'thumb'; div.tabIndex=0;
+        div.innerHTML = `<img src="${c.src}" alt="${c.title}"><div class="caption">${c.title}</div>`;
+        div.addEventListener('click', ()=> openModal(c));
+        div.addEventListener('keypress', (e)=>{ if(e.key === 'Enter') openModal(c); });
+        gallery.appendChild(div);
+      })
+    }
+
+    function openModal(cat){
+      modalImg.src = cat.src; modalTitle.textContent = cat.title; modalDesc.textContent = cat.desc;
+      modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
+    }
+    closeModal.addEventListener('click', ()=>{ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); });
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); } });
+
+    // --- Facts ---
+    function showRandomFact(){
+      const f = facts[Math.floor(Math.random()*facts.length)];
+      factText.textContent = f;
+      // tiny highlight effect
+      factText.animate([{opacity:0},{opacity:1}], {duration:350});
+    }
+    randomFactBtn.addEventListener('click', showRandomFact);
+
+    // initial fact
+    showRandomFact();
+
+    // --- Theme toggle ---
+    let dark = false;
+    toggleTheme.addEventListener('click', ()=>{
+      dark = !dark;
+      document.documentElement.classList.toggle('dark', dark);
+      toggleTheme.textContent = dark ? 'Modo claro' : 'Modo oscuro';
+    });
+
+    // --- Filter ---
+    filter.addEventListener('change', (e)=> renderGallery(e.target.value));
+
+    // --- Tips button ---
+    document.getElementById('showTips').addEventListener('click', ()=>{
+      alert('Consejos breves:\n- Proporciona agua y comida separadas.\n- Cepilla el pelaje regularmente.\n- Consulta al veterinario al menor signo de enfermedad.');
+    });
+
+    // --- Quiz ---
+    const quizQuestions = [
+      {q:'¿Cuántos dientes tiene un gato adulto?', options:['24','30','36','40'], answer:1},
+      {q:'¿Qué sentido tienen más agudo los gatos?', options:['Vista','Oído','Olfato','Gusto'], answer:1},
+      {q:'¿Qué comportamiento indica que un gato confía en ti?', options:['Lamerte','Aullar','Voltear la espalda y mostrar el vientre','Ocultar comida'], answer:2}
+    ];
+
+    function startQuiz(){
+      quizContent.innerHTML='';
+      quizQuestions.forEach((qq, idx)=>{
+        const div = document.createElement('div'); div.className='q card';
+        const title = document.createElement('h4'); title.textContent = `Pregunta ${idx+1}: ${qq.q}`;
+        div.appendChild(title);
+        const opts = document.createElement('div'); opts.className='options';
+        qq.options.forEach((opt, i)=>{
+          const o = document.createElement('button'); o.className='option'; o.textContent = opt; o.type='button';
+          o.addEventListener('click', ()=>{
+            // mark all disabled
+            Array.from(opts.children).forEach(ch=>ch.disabled=true);
+            if(i===qq.answer){ o.classList.add('correct'); } else { o.classList.add('wrong'); opts.children[qq.answer].classList.add('correct'); }
+          });
+          opts.appendChild(o);
+        });
+        div.appendChild(opts);
+        quizContent.appendChild(div);
+      });
+    }
+    startQuizBtn.addEventListener('click', startQuiz);
+
+    // --- Open quiz from main button ---
+    document.getElementById('openQuiz').addEventListener('click', ()=>{
+      // scroll to aside quiz
+      document.getElementById('quiz').scrollIntoView({behavior:'smooth'});
+    });
+
+    // --- Keyboard accessibility: close modal with Esc ---
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape') { modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
+    });
+
+    // render initial gallery
+    renderGallery();
+
+    // small enhancement: lazy load images
+    document.querySelectorAll('img').forEach(img=>{ img.loading='lazy'; });
+
+    // Make theme preference persistent (localStorage)
+    if(localStorage.getItem('dark')==='true'){
+      dark = true; document.documentElement.classList.add('dark'); toggleTheme.textContent='Modo claro';
+    }
+    toggleTheme.addEventListener('click', ()=> localStorage.setItem('dark', dark));
+
+  </script>
+</body>
+</html>
